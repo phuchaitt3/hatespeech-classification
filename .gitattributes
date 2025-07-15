@@ -1,0 +1,1 @@
+final_fine_tuned_bert_2_class/model.safetensors filter=lfs diff=lfs merge=lfs -text
