@@ -22,17 +22,12 @@ To prepare this raw JSON data for the web application's target lookup feature, a
 *(Note: The rationale extraction and MLM masking were handled separately during the initial model training phase).*
 
 **Model Architecture & Two-Phase Training**
-
 Instead of a simple out-of-the-box fine-tuning process, this project utilizes a highly specialized **Two-Phase Training Pipeline** based on the `BertForMaskedLM` and `BertForSequenceClassification` architectures.
 
-**Phase 1: Pre-Finetuning with BERT Masked Language Model (MLM)**
-To force the model to learn domain-specific nuances, the base BERT model undergoes an initial MLM pre-finetuning phase. Crucially, the masking is not random; it is guided by the human-annotated **rationales**. By masking the specific words that humans deemed "hateful," the model's self-attention mechanism is mathematically forced to focus on the context surrounding contextually significant tokens. 
-
-**Phase 2: Final Fine-Tuning for Sequence Classification**
-The rationale-aware, pre-finetuned model weights are then transferred to a sequence classification head. The model is trained on the 3-class dataset using an AdamW optimizer (Weight Decay = 0.01) and built-in dropout layers for regularization. An Early Stopping mechanism (Patience = 3, Min Delta = 0.001) was implemented to prevent overfitting based on validation loss.
+*   **Phase 1: Pre-Finetuning with BERT Masked Language Model (MLM):** To force the model to learn domain-specific nuances, the base BERT model undergoes an initial MLM pre-finetuning phase. Crucially, the masking is not random; it is guided by the human-annotated **rationales**. By masking the specific words that humans deemed "hateful," the model's self-attention mechanism is mathematically forced to focus on the context surrounding contextually significant tokens. 
+*   **Phase 2: Final Fine-Tuning for Sequence Classification:** The rationale-aware, pre-finetuned model weights are then transferred to a sequence classification head. The model is trained on the 3-class dataset using an AdamW optimizer (Weight Decay = 0.01) and built-in dropout layers for regularization. An Early Stopping mechanism (Patience = 3, Min Delta = 0.001) was implemented to prevent overfitting based on validation loss.
 
 **Evaluation & Results**
-
 The two-phase rationale-masking approach demonstrated superior performance in distinguishing between classes compared to standard baselines.
 
 *   **AUROC:** 0.858 (Highest overall ability to rank positive instances across classes)
@@ -45,32 +40,10 @@ The two-phase rationale-masking approach demonstrated superior performance in di
 *   Standard BERT-HateXplain [Attn/LIME]: AUROC 0.851 | Accuracy 0.698
 *   **Our Model (BERT MLM + Classifier + LIME): AUROC 0.858 | Accuracy 0.700**
 
-**Running the Web Application Locally**
-
-The frontend is built using Streamlit. To run this project on your local machine:
-
-1. Clone the repository.
-2. Install the necessary dependencies (PyTorch, Transformers, Streamlit, LIME, Sentence-Transformers, FAISS, Pandas, Scikit-learn).
-3. **Important Note on Large Files:** Due to file size limits, two dependency files required for the FAISS target-lookup logic might be missing from the initial clone. You must ensure `small_HateXplain_dataset.csv` and `precomputed_embeddings.npy` are present in the root directory, or the application will crash upon target identification.
-4. Run the application using the terminal command: `streamlit run web.py`
-
-**References**
-*   Mathew, R. et al., "HateXplain: A Benchmark Dataset for Explainable Hate Speech Detection"
-*   Kim, J., Lee, B., and Sohn, K.-A., "Why Is It Hate Speech? Masked Rationale Prediction for Explainable Hate Speech Detection"
-
 **Requirements**
 *   Python 3.7+
 *   PyTorch, Transformers (Hugging Face), LIME, Sentence-Transformers
 *   Streamlit, Scikit-learn, Pandas, NumPy, FAISS
-
-**Reproducing the Training Pipeline (Kaggle)**
-If you wish to train the models from scratch rather than downloading the pre-trained weights:
-1. Create a new Kaggle Notebook and upload `train_model.ipynb`.
-2. Import the raw dataset `HateXplain_dataset.json` into your Kaggle environment and name the dataset folder `hatexplain-dataset`.
-3. Run all cells in the notebook.
-4. Upon completion, download the output weights from the Kaggle working directory:
-   *   `bert_mlm_model.zip` (Optional: The Phase 1 MLM checkpoint)
-   *   `bert_cf_model.zip` (Required: The Phase 2 Sequence Classification checkpoint used for inference)
 
 **Data & Model Weights (External Links)** 
 Due to GitHub file size limitations, the massive original training artifacts are hosted externally. **Note: You do not need to download these to run the web application**, as the necessary extracted weights and lightweight datasets are already included in this repository.
@@ -79,12 +52,12 @@ Due to GitHub file size limitations, the massive original training artifacts are
 *   **Phase 2 (Classification) Checkpoint:** https://drive.google.com/file/d/1vv719nIP8HsXzKIuBMJ3HGzb6YDLFfi7/edit *(Optional: The extracted model weights are already provided in the `final_fine_tuned_bert_2_class/` directory of this repo)*
 
 **Running the Web Application Locally**
-Because the final fine-tuned model directory (`final_fine_tuned_bert_2_class/`) and the preprocessed nearest-neighbor lookup table (`small_HateXplain_dataset.csv`) are already tracked in this repository, deploying the frontend is fast and straightforward.
+Because the final fine-tuned model directory (`final_fine_tuned_bert_2_class/`) and the preprocessed nearest-neighbor lookup table (`small_HateXplain_dataset.csv`) and embeddings are already tracked in this repository, deploying the frontend is fast and straightforward.
 
 1. **Clone the Repository:** Clone this project to your local machine and navigate into the root directory.
-2. **Install Dependencies:** Ensure your Python environment has the necessary packages installed (e.g., `streamlit`, `torch`, `transformers`, `lime`, `sentence-transformers`, `faiss-cpu`, `pandas`, `scikit-learn`).
+2. **Install Dependencies:** Ensure your Python environment has the necessary packages installed.
 3. **Launch the App:** Run the following command in your terminal to start the Streamlit server:
-   `streamlit run web_application.py`
+   `streamlit run web.py`
 4. The web application will automatically open in your default browser at `http://localhost:8501`.
 
 **Optional: Recreating the Local Dataset**
@@ -92,3 +65,14 @@ If you wish to test the data engineering script and see how the nearest-neighbor
 1. Download `HateXplain_dataset.json` from the external links above and place it in the root directory.
 2. Run `python extract_small_dataset.py` in your terminal. This will parse the JSON, apply the majority-voting logic, and regenerate the `small_HateXplain_dataset.csv` file. 
 3. *Note: The extraction script will also automatically encode the text using Sentence-BERT and generate `precomputed_embeddings.npy` in the same pass. This step may take a minute or two depending on your CPU/GPU, but it ensures the Streamlit app's FAISS index boots instantly later.*
+
+**Reproducing the Training Pipeline (Kaggle)**
+If you wish to train the models from scratch rather than using the pre-trained weights:
+1. Create a new Kaggle Notebook and upload `train_model.ipynb`.
+2. Import the raw dataset `HateXplain_dataset.json` into your Kaggle environment and name the dataset folder `hatexplain-dataset`.
+3. Run all cells in the notebook.
+4. Upon completion, download the output weights from the Kaggle working directory (`bert_mlm_model.zip` and `bert_cf_model.zip`).
+
+**References**
+*   Mathew, R. et al., "HateXplain: A Benchmark Dataset for Explainable Hate Speech Detection"
+*   Kim, J., Lee, B., and Sohn, K.-A., "Why Is It Hate Speech? Masked Rationale Prediction for Explainable Hate Speech Detection"
