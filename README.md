@@ -10,13 +10,14 @@ Beyond basic classification, the system identifies the likely target community o
 *   **Interactive Explainability:** Integrates LIME directly into the Streamlit UI to highlight the specific tokens/words that drove the model's prediction.
 
 **Dataset & Preprocessing**
-The model is trained on the **HateXplain** benchmark dataset, a comprehensive corpus annotated from multiple perspectives. The raw dataset (`HateXplain_dataset.json`) includes over 20,000 samples.
+The model is trained on the HateXplain benchmark dataset, a comprehensive corpus annotated from multiple perspectives. The raw dataset (`HateXplain_dataset.json`) includes over 20,000 samples.
 
 To prepare this raw JSON data for the web application's target lookup feature, a custom pipeline (`extract_small_dataset.py`) was engineered to execute the following:
 *   **Majority Voting Labeling:** Each post is annotated by multiple individuals. The script extracts the final class label based on majority consensus. 
 *   **Target Community Extraction:** The script iterates through annotator targets and only assigns a target community if it appears in >50% of the annotations, otherwise defaulting to "None".
 *   **Token Aggregation:** Raw token lists are joined and normalized into unified text strings for easier nearest-neighbor matching.
-*   **Final Output:** This script outputs `small_HateXplain_dataset.csv`, a lightweight reference table essential for the application's local FAISS similarity search.
+*   **Vector Embedding Precomputation:** The script processes the normalized text through a `paraphrase-MiniLM-L6-v2` Sentence-Transformer, computing and saving the dense vector representations.
+*   **Final Output:** This script outputs `small_HateXplain_dataset.csv` (the lightweight reference table) and `precomputed_embeddings.npy` (the vector cache), both of which allow the application's local FAISS similarity search to boot instantly.
 
 *(Note: The rationale extraction and MLM masking were handled separately during the initial model training phase).*
 
@@ -87,6 +88,7 @@ Because the final fine-tuned model directory (`final_fine_tuned_bert_2_class/`) 
 4. The web application will automatically open in your default browser at `http://localhost:8501`.
 
 **Optional: Recreating the Local Dataset**
-If you wish to test the data engineering script and see how the nearest-neighbor lookup table was built:
+If you wish to test the data engineering script and see how the nearest-neighbor lookup tables were built:
 1. Download `HateXplain_dataset.json` from the external links above and place it in the root directory.
-2. Run `python extract_small_dataset.py` in your terminal. This will parse the JSON and regenerate `small_HateXplain_dataset.csv`.
+2. Run `python extract_small_dataset.py` in your terminal. This will parse the JSON, apply the majority-voting logic, and regenerate the `small_HateXplain_dataset.csv` file. 
+3. *Note: The extraction script will also automatically encode the text using Sentence-BERT and generate `precomputed_embeddings.npy` in the same pass. This step may take a minute or two depending on your CPU/GPU, but it ensures the Streamlit app's FAISS index boots instantly later.*

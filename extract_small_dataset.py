@@ -55,3 +55,17 @@ df_small.to_csv('small_HateXplain_dataset.csv', index=False)
 df_small.to_json('small_HateXplain_dataset.json', orient='records', lines=True)
 
 print("Extraction complete. Saved to 'small_HateXplain_dataset.csv'.")
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+print("Generating Sentence-BERT embeddings (this may take a minute)...")
+# Load the embedding model
+embedding_model = SentenceTransformer('paraphrase-MiniLM-L6-v2')
+
+# Encode all the normalized text from the small dataset
+embeddings = embedding_model.encode(df_small['input_text_normalized'].tolist(), show_progress_bar=True)
+
+# Save the numpy array
+np.save('precomputed_embeddings.npy', embeddings)
+print("Embeddings saved to 'precomputed_embeddings.npy'.")
